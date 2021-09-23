@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namesspace:命名空间,可以理解为包 -->
+<mapper namespace="student">
+    <!--  开启二级缓存
+        eviction是缓存清除策略,当缓存对象数量达到设置的上限后,自动触发对应算法清除缓存对象
+            1. LRU(Least Recently Used:最近最少使用):移出最近最少使用的缓存对象,还有一个LFU,使用频率最少的缓存将被清除
+            2. FIFO(First IN First Out):先进先出,按对象进入进入缓存的顺序来移出他们
+            3. SOFT(软引用):基于垃圾收集器状态和软引用规则的对象
+            4. WEAK(弱引用):比软引用更弱,基础JVM垃圾回收期状态和弱引用规则的对象
+            除了LRU,其他的都不推荐,FIFO并不能保证命中效果,即可能把热缓存给清除,SOFT和WEAK则是基于JVM垃圾回收的策略,并不是Mybatis自己的东西
+        flushInterval:缓存清除间隔,代表隔多长时间去自动清空缓存,单位毫秒 600000毫秒=10分钟,可以根据实际内存值适当设置的长一些
+        size:缓存存储对象上限,用户保存对象或者集合(一个集合算一个对象数量)的数量上限
+        readOnly:true:代表返回只读缓存,每次从缓存取出的缓存对象本身,这种执行效率较高
+                 false:代表每次取出的缓存是真实缓存对象的副本,每次取出的对象都是不同的,这种安全性比较高
+    -->
+    <cache eviction="LRU" flushInterval="600000" size="512" readOnly="true"/>
+
+    <!-- select标签代表声明是查询语句 id:sql的名称 resultType:返回对象  useCache="false"代表结果不会放入缓存-->
+    <select id="queryAll" resultType="Student" useCache="false">
+        select id ,nickname,realname,sex,mobile,birthday,course_id
+        	from student order by birthday desc
+    </select>
+
+    <select id="queryById" parameterType="Integer" resultType="com.softeem.entity.Student">
+        select * from student where id = #{id}
+    </select>
+
+    <select id="queryByIdRange" parameterType="java.util.Map" resultType="com.softeem.entity.Student">
+        select * from student where id between #{minId} and #{maxId}
+    </select>
+
+    <resultMap id="studentMap" type="com.softeem.dto.StudentDTO">
+        <id property="student.id" column="id"/>
+        <result property="student.nickname" column="nickname"/>
+        <result property="student.realname" column="realname"/>
+        <result property="student.sex" column="sex"/>
+        <result property="student.mobile" column="mobile"/>
+        <result property="student.birthday" column="birthday"/>
+        <result property="courseName" column="course_name"/>
+    </resultMap>
+
+    <select id="queryStudentMap" resultMap="studentMap">
+--         SELECT s.id ,s.nickname ,s.realname,s.sex,s.mobile,s.birthday,c.course_name
+--         FROM student s ,course c
+--         WHERE c.course_id = s.course_id
+        SELECT s.id ,s.nickname ,s.realname,s.sex,s.mobile,s.birthday,c.course_name
+        FROM student s INNER JOIN course c
+        ON c.course_id = s.course_id
+    </select>
+
+    <!--  flushCache="true"  -->
+    <insert id="insertStudent" parameterType="com.softeem.entity.Student" useGeneratedKeys="true" keyColumn="id"
+            keyProperty="id" flushCache="true">
+        <!--        <selectKey resultType="Integer" keyProperty="id" order="AFTER">-->
+        <!--            select last_insert_id()-->
+        <!--        </selectKey>-->
+        INSERT INTO student(nickname,realname,sex,mobile,birthday,course_id)
+        VALUES(#{nickname},#{realname},#{sex},#{mobile},#{birthday},#{courseId})
+    </insert>
+
+    <insert id="insertStudentUUID" parameterType="com.softeem.entity.StudentUUID">
+        <selectKey resultType="String" keyProperty="id" order="BEFORE">
+            -- select uuid()
+            select replace(uuid(),'-','')
+        </selectKey>
+        INSERT INTO student_uuid(id,nickname,realname,sex,mobile,birthday,course_id)
+        VALUES(#{id},#{nickname},#{realname},#{sex},#{mobile},#{birthday},#{courseId})
+    </insert>
+
+    <update id="updateStudent" parameterType="com.softeem.entity.Student">
+        UPDATE student SET
+            nickname = #{nickname},
+            realname = #{realname},
+            sex = #{sex},
+            mobile = #{mobile},
+            birthday = #{birthday},
+            course_id = #{courseId}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="Integer">
+        DELETE FROM  student WHERE id = #{id}
+    </delete>
+
+    <select id="_queryById" parameterType="Integer" resultType="com.softeem.entity.Student">
+        select * from student where id = ${id}
+    </select>
+
+    <select id="dynamicSql" parameterType="com.softeem.entity.Student" resultType="com.softeem.dto.StudentDTO2">
+        SELECT s.id ,s.nickname ,s.realname,s.sex,s.mobile,s.birthday,c.course_name
+        FROM student s INNER JOIN course c
+        ON c.course_id = s.course_id
+        <where>
+            <if test="sex!=null">
+                AND s.sex = #{sex}
+            </if>
+        </where>
+    </select>
+
+    <sql id="base_column">
+        id,nickname,realname,sex,birthday,mobile,course_id
+    </sql>
+
+    <select id="queryByIdWithSql" parameterType="Integer" resultType="com.softeem.entity.Student">
+        select
+        <include refid="base_column"/>
+        from student where id = #{id}
+    </select>
+
+
+    <select id="queryStudentsByIds" parameterType="com.softeem.dto.StudentDTO3" resultType="com.softeem.entity.Student">
+        SELECT
+        <include refid="base_column"/>
+        FROM student
+        <where>
+            <foreach collection="ids" item="item" open="id IN(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </where>
+    </select>
+
+    <select id="queryStudentsByList" parameterType="java.util.List" resultType="com.softeem.entity.Student">
+        SELECT
+        <include refid="base_column"/>
+        FROM student
+        <where>
+            <!--            <foreach collection="List" item="item" open="id IN(" close=")" separator=",">-->
+            <!--            <foreach collection="ids" item="item" open="id IN(" close=")" separator=",">-->
+            <foreach collection="list" item="item" open="id IN(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </where>
+    </select>
+
+    <select id="queryStudentsByArray" parameterType="java.util.List" resultType="com.softeem.entity.Student">
+        SELECT
+        <include refid="base_column"/>
+        FROM student
+        <where>
+            <foreach collection="array" item="item" open="id IN(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </where>
+    </select>
+
+    <select id="queryStudentsByMap" parameterType="java.util.Collection" resultType="com.softeem.entity.Student">
+        SELECT
+        <include refid="base_column"/>
+        FROM student
+        <where>
+            <foreach collection="aaa" item="item" open="id IN(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </where>
+    </select>
+
+
+    <resultMap type="com.softeem.dto.StudentCourseDTO" id="StudentMap">
+        <result property="id" column="id" jdbcType="INTEGER"/>
+        <result property="nickname" column="nickname" jdbcType="VARCHAR"/>
+        <result property="realname" column="realname" jdbcType="VARCHAR"/>
+        <result property="sex" column="sex" jdbcType="INTEGER"/>
+        <result property="mobile" column="mobile" jdbcType="VARCHAR"/>
+        <result property="birthday" column="birthday" jdbcType="TIMESTAMP"/>
+        <result property="courseId" column="course_id" jdbcType="INTEGER"/>
+        <association property="course" javaType="com.softeem.entity.Course">
+            <id property="courseId" column="course_id" />
+            <result property="courseName" column="course_name" jdbcType="VARCHAR"/>
+            <result property="courseContext" column="course_context" jdbcType="VARCHAR"/>
+            <result property="beginTime" column="begin_time" jdbcType="TIMESTAMP"/>
+            <result property="endTime" column="end_time" jdbcType="TIMESTAMP"/>
+        </association>
+    </resultMap>
+
+    <select id="selectManyToOne" resultMap="StudentMap">
+        SELECT * FROM student s LEFT JOIN course c ON s.course_id = c.course_id LIMIT 0,2
+    </select>
+
+    <resultMap type="com.softeem.dto.StudentCourseDTO2" id="StudentMap2">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <result property="nickname" column="nickname" jdbcType="VARCHAR"/>
+        <result property="realname" column="realname" jdbcType="VARCHAR"/>
+        <result property="sex" column="sex" jdbcType="INTEGER"/>
+        <result property="mobile" column="mobile" jdbcType="VARCHAR"/>
+        <result property="birthday" column="birthday" jdbcType="TIMESTAMP"/>
+        <result property="courseId" column="course_id" jdbcType="INTEGER"/>
+        <association property="course" javaType="com.softeem.entity.Course2">
+            <id property="id" column="id" />
+            <result property="courseName" column="course_name" jdbcType="VARCHAR"/>
+            <result property="courseContext" column="course_context" jdbcType="VARCHAR"/>
+            <result property="beginTime" column="begin_time" jdbcType="TIMESTAMP"/>
+            <result property="endTime" column="end_time" jdbcType="TIMESTAMP"/>
+        </association>
+    </resultMap>
+
+    <select id="selectManyToOne2" resultMap="StudentMap2">
+        SELECT * FROM student s LEFT JOIN course2 c ON s.course_id = c.id LIMIT 0,2
+    </select>
+
+    <resultMap type="com.softeem.dto.StudentCourseDTO" id="StudentMap3">
+        <id property="id" column="id" jdbcType="INTEGER"/>
+        <result property="courseId" column="course_id" jdbcType="INTEGER"/>
+        <association property="course" javaType="com.softeem.entity.Course" select="course.selectById" column="course_id">
+        </association>
+    </resultMap>
+
+    <select id="selectManyToOne3" resultMap="StudentMap3">
+        SELECT * FROM student LIMIT 2,1
+    </select>
+
+    <select id="queryByCourseId" parameterType="Integer" resultType="com.softeem.entity.Student">
+        select <include refid="base_column" /> from student where course_id = #{courseId}
+    </select>
+
+    <!-- VALUES (1,'a1','a2'),(2,'b1','b2'),(...)   -->
+    <insert id="batchInsertStudent" parameterType="java.util.List" useGeneratedKeys="true" keyColumn="id"
+            keyProperty="id">
+        INSERT INTO student(nickname,realname,sex,mobile,birthday,course_id)
+        VALUES
+        <foreach collection="list" item="item" index="index" separator="," >
+            (#{item.nickname},#{item.realname},#{item.sex},#{item.mobile},#{item.birthday},#{item.courseId})
+        </foreach>
+    </insert>
+
+    <select id="selectPage" resultType="com.softeem.entity.Student">
+        SELECT <include refid="base_column" /> FROM student
+    </select>
+</mapper>

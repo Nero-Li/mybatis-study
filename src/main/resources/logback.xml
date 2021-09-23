@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+    根节点
+    scan: 当此属性设置为true时，配置文件如果发生改变，将会被重新加载，默认值为true。
+　　 scanPeriod: 设置监测配置文件是否有修改的时间间隔，如果没有给出时间单位，默认单位是毫秒。当scan为true时，此属性生效。默认的时间间隔为1分钟。
+　　 debug: 当此属性设置为true时，将打印出logback内部日志信息，实时查看logback运行状态。默认值为false。
+    <configuration scan="true" scanPeriod="60 seconds" debug="false">
+-->
+<configuration>
+    <!--
+        负责写日志的组件，它有两个必要属性name和class。name指定appender名称，class指定appender的全限定名
+        appender class 类型主要有三种：ConsoleAppender、FileAppender、RollingFileAppender
+            ConsoleAppender 把日志输出到控制台，有以下子节点：
+                <encoder> ： 负责两件事，一是把日志信息转换成字节数组，二是把字节数组写入到输出流。
+                <target>：字符串System.out(默认)或者System.err
+            FileAppender：把日志添加到文件，有以下子节点：
+               <file>：被写入的文件名，可以是相对目录，也可以是绝对目录，如果上级目录不存在会自动创建，没有默认值。
+               <append>：如果是 true，日志被追加到文件结尾，如果是 false，清空现存文件，默认是true。
+               <encoder>：对记录事件进行格式化。
+               <prudent>：如果是 true，日志会被安全的写入文件，即使其他的FileAppender也在向此文件做写入操作，效率低，默认是 false。
+            RollingFileAppender：滚动记录文件，先将日志记录到指定文件，当符合某个条件时，将日志记录到其他文件。有以下子节点：
+                <file>：被写入的文件名，可以是相对目录，也可以是绝对目录，如果上级目录不存在会自动创建，没有默认值。
+                <append>：如果是 true，日志被追加到文件结尾，如果是 false，清空现存文件，默认是true。
+                <rollingPolicy>:当发生滚动时，决定RollingFileAppender的行为，涉及文件移动和重命名。属性class定义具体的滚动策略类
+                class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy，是最受欢迎的滚动政策，例如按天或按月。
+                TimeBasedRollingPolicy承担翻滚责任以及触发所述翻转的责任。
+                TimeBasedRollingPolicy支持自动文件压缩
+     -->
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!--
+               %d {pattern } %date {pattern } 输出日志的打印日志，模式语法与java.text.SimpleDateFormat 兼容。
+               %thread %t 输出产生日志的线程名
+               %p / le / level
+               - 代表 左对齐 标志
+               十进制数代表 最小宽度 如果实际宽度大于最小宽度 不会被截断;小于最小宽度,空格填充
+               .十进制数代表最大宽度 如果实际宽度大于最大宽度 会被从前截断,如果要从后截断则(.-十进制数);小于最大宽度,空格填充
+               %c {length }  %lo {length } %logger {length } :输出日志的logger名，可有一个整形参数，功能是缩短logger名，
+                      设置为0表示只输入logger最右边点符号之后的字符串。
+               %m / msg / message 输出应用程序提供的信息。
+               %n :输出平台先关的分行符“\n”或者“\r\n”。
+            -->
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+    <!--root是默认的logger 这里设定输出级别是info-->
+    <root level="debug">
+        <!--定义了一个个appender，日志会通过往这一个appender里面写-->
+        <appender-ref ref="console" />
+    </root>
+</configuration>

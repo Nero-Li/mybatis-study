@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="course">
+
+    <resultMap type="com.softeem.dto.CourseStudentDTO" id="CourseMap">
+        <id property="courseId" column="course_id" jdbcType="INTEGER"/>
+        <result property="courseName" column="course_name" jdbcType="VARCHAR"/>
+        <result property="courseContext" column="course_context" jdbcType="VARCHAR"/>
+        <result property="beginTime" column="begin_time" jdbcType="TIMESTAMP"/>
+        <result property="endTime" column="end_time" jdbcType="TIMESTAMP"/>
+        <collection property="studentList" javaType="java.util.List" ofType="com.softeem.entity.Student">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="nickname" column="nickname" jdbcType="VARCHAR"/>
+            <result property="realname" column="realname" jdbcType="VARCHAR"/>
+            <result property="sex" column="sex" jdbcType="INTEGER"/>
+            <result property="mobile" column="mobile" jdbcType="VARCHAR"/>
+            <result property="birthday" column="birthday" />
+            <result property="courseId" column="course_id" jdbcType="INTEGER"/>
+        </collection>
+    </resultMap>
+
+    <select id="selectById" resultType="com.softeem.entity.Course" parameterType="Integer">
+        SELECT course_id,course_name,course_context,begin_time,end_time FROM course WHERE course_id = #{courseId}
+    </select>
+
+
+    <select id="selectOneToMany" resultMap="CourseMap">
+        SELECT * FROM course c  INNER JOIN student s ON s.course_id = c.course_id
+    </select>
+
+    <resultMap type="com.softeem.dto.CourseStudentDTO" id="CourseMap2">
+        <id property="courseId" column="course_id" jdbcType="INTEGER"/>
+        <collection property="studentList" javaType="java.util.List" ofType="com.softeem.entity.Student"
+            select="student.queryByCourseId" column="course_id">
+        </collection>
+    </resultMap>
+
+    <select id="selectOneToMany2" resultMap="CourseMap2">
+        SELECT * FROM course limit 0,1
+    </select>
+
+
+</mapper>

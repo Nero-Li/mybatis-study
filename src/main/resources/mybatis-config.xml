@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <!-- 配置文件 -->
+    <properties resource="jdbc.properties"></properties>
+    <!--  下划线=>驼峰  -->
+    <settings>
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+    </settings>
+
+    <typeAliases>
+        <package name="com.softeem"/>
+    </typeAliases>
+
+    <plugins>
+<!--        <plugin interceptor="com.github.pagehelper.PageInterceptor">-->
+<!--            <property name="helperDialect" value="mysql"/>-->
+<!--            <property name="reasonable" value="true"/>-->
+<!--        </plugin>-->
+        <plugin interceptor="com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor">
+            <property name="@page" value="com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor"/>
+            <property name="page:dbType" value="h2"/>
+        </plugin>
+    </plugins>
+    <environments default="development">
+        <!--  environment 环境配置标签,id 代表唯一标识-->
+        <environment id="development">
+            <!--  采用JDBC方式对数据库事务进行conmmit/rollback  -->
+            <transactionManager type="JDBC"/>
+            <!--  基于连接池的方式进行连接  -->
+            <dataSource type="POOLED">
+                <!--  数据库驱动  -->
+                <property name="driver" value="${driverClassName}"/>
+                <!--  数据库url  -->
+                <property name="url" value="${jdbc_url}"/>
+                <!--  数据库用户名  -->
+                <property name="username" value="${jdbc_username}"/>
+                <!--  数据名密码  -->
+                <property name="password" value="${jdbc_password}"/>
+            </dataSource>
+        </environment>
+
+        <environment id="dev">
+            <!--  采用JDBC方式对数据库事务进行conmmit/rollback  -->
+            <transactionManager type="JDBC"/>
+            <!--  基于c3p0连接池的方式进行连接  -->
+            <dataSource type="com.softeem.datasource.C3P0DataSourceFactory">
+                <!--  数据库驱动  -->
+                <property name="driverClass" value="${driverClassName}"/>
+                <!--  数据库url  -->
+                <property name="jdbcUrl" value="${jdbc_url}"/>
+                <!--  数据库用户名  -->
+                <property name="user" value="${jdbc_username}"/>
+                <!--  数据名密码  -->
+                <property name="password" value="${jdbc_password}"/>
+                <property name="initialPoolSize" value="5"/>
+                <property name="minPoolSize" value="5"/>
+                <property name="maxPoolSize" value="20"/>
+            </dataSource>
+        </environment>
+    </environments>
+
+    <mappers>
+        <mapper resource="mapper/studentDao.xml" />
+        <mapper resource="mapper/CourseDao.xml" />
+    </mappers>
+
+</configuration>
